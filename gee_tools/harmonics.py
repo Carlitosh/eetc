@@ -8,6 +8,7 @@ Stanford University
 import ee
 import numpy as np
 import gee_tools.datasources.optical_datasources as optix
+import gee_tools.datasources.sentinel2_2a as S2_SR
 
 def add_timeunit(image, refdate):
     
@@ -208,7 +209,7 @@ def fit_harmonics(harmcoeffs, imgcoll, omega, nharmonics, bands, refdate):
     return fittedcoll
 
 # NOTE: Out of date
-def lx_hregr(region, start_date, end_date, omega=1.5, imgmask=None, bands=None, rmbands=None,
+def lx_hregr(region, start_date, end_date, omega=1.5, imgmask=None, bands=None, rmbands=None, Sensor='L8',
              independents=None, addcount=True):
     """
     Generate harmonics composite for a merged Landsat SR collection.
@@ -227,8 +228,15 @@ def lx_hregr(region, start_date, end_date, omega=1.5, imgmask=None, bands=None, 
         independents = ee.List(['constant', 'cos', 'sin', 'cos2', 'sin2'])
 
     # TODO: update to new Collection1 collections
-    lx = optix.LandsatSR(region, start_date, end_date).mergedqam
-    lx = lx.select(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']).map(optix.addVIs)
+        
+    if Sensor == 'L8':
+        lx = optix.LandsatSR(region, start_date, end_date).mergedqam
+        lx = lx.select(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']).map(optix.addVIs)
+    elif Sensor == 'S2':
+        lx = S2_SR(region, start_date, end_date, addVIs=True, addCloudMasks=False).get_img_coll()
+        lx = lx.select(['BLUE', 'GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2'])
+    else:
+        print('The sensor names is wrong')
 
     if imgmask is not None:
         lx = lx.map(lambda img: img.updateMask(imgmask))
